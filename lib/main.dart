@@ -1,73 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:squeez_game/Screens/menu/menu.dart';
-import 'package:squeez_game/constants.dart';
+import 'package:flutter/services.dart';
+import 'package:squeez_game/Screens/Menu/menu.dart';
+import 'package:squeez_game/services/audio_service.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Initialise audio engine
+  await AudioService().init();
+  // Start BGM immediately (mute state will be synced when screens load)
+  unawaited(AudioService().playBgm());
+  runApp(const MyApp());
 }
 
+// Convenience helper so we don't need to import async everywhere
+// ignore: unused_element
+void unawaited(Future<void> future) {}
+
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      
-      title: 'Squeez Game',
+      title: 'Squeeze Can',
       theme: ThemeData(
-
-        primarySwatch: Colors.indigo,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
       ),
-      home: MenuPage(),
-    );
-  }
-}
-
-class MyAppSecond extends StatelessWidget {
-  static const String _title = 'Flutter Code Sample';
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: _title,
-      home: Scaffold(
-        appBar: AppBar(title: const Text(_title)),
-        body: MyStatefulWidget(),
-      ),
-    );
-  }
-}
-
-class MyStatefulWidget extends StatefulWidget {
-  MyStatefulWidget({Key? key}) : super(key: key);
-
-  @override
-  _MyStatefulWidgetState createState() => _MyStatefulWidgetState();
-}
-
-class _MyStatefulWidgetState extends State<MyStatefulWidget> {
-  bool selected = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selected = !selected;
-        });
-      },
-      child: Center(
-        child: AnimatedContainer(
-          width: selected ? 200.0 : 100.0,
-          height: selected ? 100.0 : 200.0,
-          color: selected ? Colors.red : Colors.blue,
-          alignment:
-              selected ? Alignment.center : AlignmentDirectional.topCenter,
-          duration: Duration(seconds: 2),
-          curve: Curves.fastOutSlowIn,
-          child: FlutterLogo(size: 75),
-        ),
-      ),
+      home: const MenuPage(),
     );
   }
 }
