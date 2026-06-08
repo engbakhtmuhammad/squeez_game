@@ -4,31 +4,53 @@ class PlayerProfile {
   final String id;
   String name;
   String? photoPath;
+  String? refereePhotoPath;
   int bestScore;
   int bestTimeMs;
+  int totalXP;
+  int currentStreak;
+  int highestStreak;
+  DateTime? lastPlayedDate;
 
   PlayerProfile({
     required this.id,
     required this.name,
     this.photoPath,
+    this.refereePhotoPath,
     this.bestScore = 0,
     this.bestTimeMs = 0,
+    this.totalXP = 0,
+    this.currentStreak = 0,
+    this.highestStreak = 0,
+    this.lastPlayedDate,
   });
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'photoPath': photoPath,
+        'refereePhotoPath': refereePhotoPath,
         'bestScore': bestScore,
         'bestTimeMs': bestTimeMs,
+        'totalXP': totalXP,
+        'currentStreak': currentStreak,
+        'highestStreak': highestStreak,
+        'lastPlayedDate': lastPlayedDate?.toIso8601String(),
       };
 
   factory PlayerProfile.fromJson(Map<String, dynamic> json) => PlayerProfile(
         id: json['id'] as String,
         name: json['name'] as String,
         photoPath: json['photoPath'] as String?,
+        refereePhotoPath: json['refereePhotoPath'] as String?,
         bestScore: json['bestScore'] as int? ?? 0,
         bestTimeMs: json['bestTimeMs'] as int? ?? 0,
+        totalXP: json['totalXP'] as int? ?? 0,
+        currentStreak: json['currentStreak'] as int? ?? 0,
+        highestStreak: json['highestStreak'] as int? ?? 0,
+        lastPlayedDate: json['lastPlayedDate'] != null
+            ? DateTime.tryParse(json['lastPlayedDate'] as String)
+            : null,
       );
 
   String get formattedTime {

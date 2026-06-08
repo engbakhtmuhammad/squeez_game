@@ -35,6 +35,7 @@ dependencies:
   vibration: ^2.0.0
   webview_flutter: ^4.10.0
   google_fonts: ^6.0.0
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:

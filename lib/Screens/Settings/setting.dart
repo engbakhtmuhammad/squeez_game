@@ -18,6 +18,14 @@ class SettingPage extends StatefulWidget {
 class _SettingPageState extends State<SettingPage> {
   bool _vibrationEnabled = true;
   Language _selectedLanguage = Language.english;
+  String _difficulty = 'normal';
+
+  static const List<String> _difficulties = [
+    'easy',
+    'normal',
+    'hard',
+    'extreme',
+  ];
 
   @override
   void initState() {
@@ -31,10 +39,38 @@ class _SettingPageState extends State<SettingPage> {
     // Sync AudioService with the persisted sound preference
     await AudioService().setMuteBgm(!s);
     final lang = await GameData.getLanguage();
+    final diff = await GameData.getDifficulty();
     if (mounted) setState(() {
       _vibrationEnabled = v;
       _selectedLanguage = lang;
+      _difficulty = diff;
     });
+  }
+
+  Future<void> _changeDifficulty() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _difficulties
+              .map(
+                (d) => ListTile(
+                  leading: _difficulty == d
+                      ? const Icon(Icons.check, color: Colors.green)
+                      : null,
+                  title: Text(d.toUpperCase()),
+                  onTap: () async {
+                    await GameData.setDifficulty(d);
+                    setState(() => _difficulty = d);
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleVibration(bool value) async {
@@ -223,6 +259,28 @@ class _SettingPageState extends State<SettingPage> {
                     ],
                   ),
                 ),
+                // Difficulty Selection
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.speed, color: Colors.white, size: 30),
+                    const SizedBox(width: 10),
+                    CustomButton(
+                      text: _difficulty.toUpperCase(),
+                      onPressed: _changeDifficulty,
+                      backgroundColor: kPrimaryColor,
+                      textColor: Colors.white,
+                      borderColor: Colors.black,
+                      borderWidth: 2.0,
+                      fontSize: 14,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20.0,
+                        vertical: 10.0,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: size.height * .02),
                 // Delete Data Button
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: size.height * .02),

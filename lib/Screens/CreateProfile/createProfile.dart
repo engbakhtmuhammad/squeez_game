@@ -19,6 +19,7 @@ class _CreateProfileState extends State<CreateProfile> {
   final TextEditingController _nameController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   String? _photoPath;
+  String? _refereePhotoPath;
 
   @override
   void dispose() {
@@ -29,39 +30,23 @@ class _CreateProfileState extends State<CreateProfile> {
   bool get _isProfileComplete =>
       _nameController.text.trim().isNotEmpty;
 
-  Future<void> _takePhoto() async {
+  Future<String?> _pickAndSave(ImageSource source, String prefix) async {
     final XFile? image = await _picker.pickImage(
-      source: ImageSource.camera,
+      source: source,
       maxWidth: 512,
       maxHeight: 512,
       imageQuality: 80,
     );
-    if (image != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedPath = '${dir.path}/$fileName';
-      await File(image.path).copy(savedPath);
-      setState(() => _photoPath = savedPath);
-    }
+    if (image == null) return null;
+    final dir = await getApplicationDocumentsDirectory();
+    final fileName = '${prefix}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final savedPath = '${dir.path}/$fileName';
+    await File(image.path).copy(savedPath);
+    return savedPath;
   }
 
-  Future<void> _pickFromGallery() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
-    if (image != null) {
-      final dir = await getApplicationDocumentsDirectory();
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedPath = '${dir.path}/$fileName';
-      await File(image.path).copy(savedPath);
-      setState(() => _photoPath = savedPath);
-    }
-  }
-
-  Future<void> _showPhotoOptions() async {
+  Future<void> _showPhotoOptions({required bool isReferee}) async {
+    final prefix = isReferee ? 'referee' : 'profile';
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -71,17 +56,35 @@ class _CreateProfileState extends State<CreateProfile> {
             ListTile(
               leading: const Icon(Icons.camera_alt),
               title: const Text('Take a Photo'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                _takePhoto();
+                final path = await _pickAndSave(ImageSource.camera, prefix);
+                if (path != null) {
+                  setState(() {
+                    if (isReferee) {
+                      _refereePhotoPath = path;
+                    } else {
+                      _photoPath = path;
+                    }
+                  });
+                }
               },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
               title: const Text('Choose from Gallery'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(ctx);
-                _pickFromGallery();
+                final path = await _pickAndSave(ImageSource.gallery, prefix);
+                if (path != null) {
+                  setState(() {
+                    if (isReferee) {
+                      _refereePhotoPath = path;
+                    } else {
+                      _photoPath = path;
+                    }
+                  });
+                }
               },
             ),
           ],
@@ -97,17 +100,62 @@ class _CreateProfileState extends State<CreateProfile> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
       photoPath: _photoPath,
+      refereePhotoPath: _refereePhotoPath,
     );
 
     await GameData.addProfile(profile);
     await GameData.setSelectedProfileId(profile.id);
 
+    // Customizer achievement: both icons set
+    if (_photoPath != null && _refereePhotoPath != null) {
+      await GameData.unlockAchievement('customizer');
+    }
+
     if (mounted) Navigator.pop(context);
+  }
+
+  Widget _iconPicker({
+    required String label,
+    required String? path,
+    required String placeholderAsset,
+    required IconData fallbackIcon,
+    required bool isReferee,
+    required double size,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(bottom: size * .15),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _showPhotoOptions(isReferee: isReferee),
+          child: CircleAvatar(
+            radius: size,
+            backgroundColor: kBackgroundColor,
+            backgroundImage: path != null
+                ? FileImage(File(path))
+                : AssetImage(placeholderAsset) as ImageProvider,
+            child: path == null
+                ? Icon(fallbackIcon, color: Colors.white, size: 26)
+                : null,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final avatarRadius = size.height * .055;
     return Scaffold(
       body: Background(
         child: Stack(
@@ -116,11 +164,11 @@ class _CreateProfileState extends State<CreateProfile> {
             SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(height: size.height * .1),
+                  SizedBox(height: size.height * .08),
                   Container(
-                    width: size.width * .8,
+                    width: size.width * .85,
                     padding: EdgeInsets.symmetric(
-                      vertical: size.height * .04,
+                      vertical: size.height * .03,
                     ),
                     decoration: BoxDecoration(
                       border: Border.all(color: kBackgroundColor, width: 4),
@@ -129,38 +177,30 @@ class _CreateProfileState extends State<CreateProfile> {
                     ),
                     child: Column(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.only(bottom: size.height * .02),
-                          child: const Text(
-                            'TAKE A PHOTO',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 26,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _iconPicker(
+                              label: 'YOUR CAN',
+                              path: _photoPath,
+                              placeholderAsset: 'assets/avatar.png',
+                              fallbackIcon: Icons.add,
+                              isReferee: false,
+                              size: avatarRadius,
                             ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _showPhotoOptions,
-                          child: CircleAvatar(
-                            radius: size.height * .07,
-                            backgroundColor: kBackgroundColor,
-                            backgroundImage: _photoPath != null
-                                ? FileImage(File(_photoPath!))
-                                : const AssetImage('assets/avatar.png')
-                                    as ImageProvider,
-                            child: _photoPath == null
-                                ? const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 30,
-                                  )
-                                : null,
-                          ),
+                            _iconPicker(
+                              label: 'GAME OVER',
+                              path: _refereePhotoPath,
+                              placeholderAsset: 'assets/avatar.png',
+                              fallbackIcon: Icons.sports,
+                              isReferee: true,
+                              size: avatarRadius,
+                            ),
+                          ],
                         ),
                         Padding(
                           padding: EdgeInsets.only(
-                            top: size.height * .04,
+                            top: size.height * .03,
                             bottom: size.height * .02,
                           ),
                           child: const Text(
@@ -168,7 +208,7 @@ class _CreateProfileState extends State<CreateProfile> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              fontSize: 26,
+                              fontSize: 22,
                             ),
                           ),
                         ),
