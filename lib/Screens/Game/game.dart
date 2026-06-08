@@ -5,26 +5,29 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:squeez_game/services/audio_service.dart';
 import 'package:vibration/vibration.dart';
+import 'package:squeez_game/Components/app_widgets.dart';
 import 'package:squeez_game/Components/background.dart';
+import 'package:squeez_game/Components/game_graphics.dart';
 import 'package:squeez_game/Screens/Lose/lose.dart';
 import 'package:squeez_game/data/game_data.dart';
 import 'package:squeez_game/models/achievement.dart';
 import 'package:squeez_game/models/game_mode.dart';
 import 'package:squeez_game/models/power_up.dart';
 import 'package:squeez_game/models/profile.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 enum CanType { player, referee }
 
 class CanItem {
   final CanType type;
-  final String asset;
+  final Color color;
   double xPos;
   final bool isBreaking;
   final String? customImagePath;
 
   CanItem({
     required this.type,
-    required this.asset,
+    required this.color,
     required this.xPos,
     this.isBreaking = false,
     this.customImagePath,
@@ -209,17 +212,16 @@ class _GamePageState extends State<GamePage>
     final isReferee = _random.nextDouble() < _difficulty.refereeChance;
     final type = isReferee ? CanType.referee : CanType.player;
 
-    String asset;
+    Color color;
     String? customPath;
     if (type == CanType.referee) {
-      asset = 'assets/refree_can.png';
+      color = AppColors.danger;
       if (widget.profile.refereePhotoPath != null &&
           File(widget.profile.refereePhotoPath!).existsSync()) {
         customPath = widget.profile.refereePhotoPath;
       }
     } else {
-      final idx = 1 + _random.nextInt(3);
-      asset = 'assets/p${idx}_can.png';
+      color = randomCanColor(_random.nextInt(4));
       if (widget.profile.photoPath != null &&
           File(widget.profile.photoPath!).existsSync()) {
         customPath = widget.profile.photoPath;
@@ -228,7 +230,7 @@ class _GamePageState extends State<GamePage>
 
     _cans.add(CanItem(
       type: type,
-      asset: asset,
+      color: color,
       xPos: size.width + 50,
       customImagePath: customPath,
     ));
@@ -366,8 +368,8 @@ class _GamePageState extends State<GamePage>
         _cans.insert(
           0,
           CanItem(
-            type: CanType.referee,
-            asset: 'assets/broken can.png',
+            type: CanType.player,
+            color: hitCan.color,
             xPos: brokenCanXPos,
             isBreaking: true,
             customImagePath: hitCan.customImagePath,
@@ -549,39 +551,12 @@ class _GamePageState extends State<GamePage>
   }
 
   Widget _buildCanVisual(CanItem can, double height) {
-    if (can.customImagePath != null &&
-        File(can.customImagePath!).existsSync()) {
-      final image = ClipOval(
-        child: Image.file(
-          File(can.customImagePath!),
-          height: height,
-          width: height,
-          fit: BoxFit.cover,
-        ),
-      );
-      final border = Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: can.type == CanType.referee
-                ? const Color(0xFFCB2229)
-                : Colors.white,
-            width: 3,
-          ),
-        ),
-        child: image,
-      );
-      if (can.isBreaking) {
-        return Transform.scale(
-          scaleY: 0.5,
-          child: border,
-        );
-      }
-      return border;
-    }
-    return SizedBox(
+    return SodaCan(
       height: height,
-      child: Image.asset(can.asset, fit: BoxFit.contain),
+      color: can.color,
+      isReferee: can.type == CanType.referee,
+      isBroken: can.isBreaking,
+      photoPath: can.customImagePath,
     );
   }
 
@@ -598,14 +573,13 @@ class _GamePageState extends State<GamePage>
             children: [
               // Conveyor belt
               Positioned(
-                bottom: 0,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: size.height * .15),
-                  child: Image.asset(
-                    'assets/conveyor.png',
-                    fit: BoxFit.fitWidth,
-                    width: size.width,
-                  ),
+                bottom: size.height * .15,
+                left: 0,
+                right: 0,
+                child: ConveyorBelt(
+                  width: size.width,
+                  height: size.height * .09,
+                  phase: (_stopwatch.elapsedMilliseconds / 700) % 1.0,
                 ),
               ),
 
@@ -635,30 +609,10 @@ class _GamePageState extends State<GamePage>
               ..._powerUps.map((pu) => Positioned(
                     left: pu.xPos,
                     bottom: size.height * .23,
-                    child: Container(
-                      width: size.height * .08,
-                      height: size.height * .08,
-                      decoration: BoxDecoration(
-                        color: pu.color,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: pu.color.withValues(alpha: 0.6),
-                            blurRadius: 12,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          pu.emoji,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                    child: PowerUpToken(
+                      size: size.height * .08,
+                      color: pu.color,
+                      emoji: pu.emoji,
                     ),
                   )),
 
@@ -679,55 +633,19 @@ class _GamePageState extends State<GamePage>
                     ),
                   )),
 
-              // Leg
-              Positioned(
+              // Crusher
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 100),
                 left: _legX,
                 bottom: size.height * .30 + (_legDownY - _legY),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  child: Stack(
-                    alignment: Alignment.topCenter,
-                    children: [
-                      Image.asset('assets/leg.png', width: _legWidth),
-                      if (_shieldActive)
-                        const Positioned(
-                          top: -4,
-                          child: Text('🛡️', style: TextStyle(fontSize: 26)),
-                        ),
-                    ],
-                  ),
-                ),
+                child: Crusher(width: _legWidth, shieldActive: _shieldActive),
               ),
 
               // Score display
               Positioned(
-                bottom: 0,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: size.height * .038,
-                    left: size.width * .6,
-                  ),
-                  child: Container(
-                    width: size.width * .3,
-                    height: size.height * .1,
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        fit: BoxFit.fitWidth,
-                        image: AssetImage('assets/score.png'),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '  ${_score.toString().padLeft(6, '0')}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ),
-                ),
+                bottom: size.height * .04,
+                right: size.width * .06,
+                child: ScorePanel(score: _score),
               ),
 
               // Top HUD: timer + active power-ups

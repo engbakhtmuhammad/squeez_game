@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:squeez_game/Components/app_widgets.dart';
 import 'package:squeez_game/Components/background.dart';
 import 'package:squeez_game/Components/custom_button.dart';
+import 'package:squeez_game/Components/game_graphics.dart';
 import 'package:squeez_game/Screens/CreateProfile/createProfile.dart';
 import 'package:squeez_game/Screens/Game/game.dart';
 import 'package:squeez_game/constants.dart';
 import 'package:squeez_game/data/game_data.dart';
 import 'package:squeez_game/models/game_mode.dart';
 import 'package:squeez_game/models/profile.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 class RecordPage extends StatefulWidget {
   final GameMode mode;
@@ -89,6 +92,93 @@ class _RecordPageState extends State<RecordPage> {
       radius: radius,
       backgroundColor: kBackgroundColor,
       backgroundImage: const AssetImage('assets/avatar-2.png'),
+    );
+  }
+
+  Widget _profileStatCard(Size size) {
+    final p = _selectedProfile!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
+      child: GlassCard(
+        width: size.width * .8,
+        borderColor: AppColors.accent.withValues(alpha: 0.5),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [AppColors.accent, AppColors.primary],
+                        ),
+                      ),
+                      child: _buildProfileAvatar(p, 28),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: AppSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.name.toUpperCase(), style: AppText.heading(18)),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.local_fire_department_rounded,
+                              color: AppColors.danger, size: 16),
+                          Text(' ${p.currentStreak} day streak',
+                              style: AppText.body(12,
+                                  color: AppColors.onSurfaceMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.md),
+            Row(
+              children: [
+                _statTile(Icons.star_rounded, 'BEST', '${p.bestScore}',
+                    AppColors.accent),
+                _statTile(Icons.timer_rounded, 'TIME', p.formattedTime,
+                    AppColors.success),
+                _statTile(Icons.bolt_rounded, 'XP', '${p.totalXP}',
+                    AppColors.primary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statTile(IconData icon, String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(value, style: AppText.heading(16)),
+            Text(label,
+                style: AppText.body(10, color: AppColors.onSurfaceMuted)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -224,15 +314,21 @@ class _RecordPageState extends State<RecordPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextButton(
+            IconButton(
               onPressed: _pageStart > 0 ? _prevPage : null,
-              child: Image.asset('assets/arrow.png', height: 30),
+              icon: const Icon(Icons.chevron_left_rounded),
+              color: Colors.white,
+              disabledColor: Colors.white24,
+              iconSize: 34,
             ),
-            TextButton(
+            IconButton(
               onPressed: _pageStart + _pageSize < _profiles.length
                   ? _nextPage
                   : null,
-              child: Image.asset('assets/arrow-2.png', height: 30),
+              icon: const Icon(Icons.chevron_right_rounded),
+              color: Colors.white,
+              disabledColor: Colors.white24,
+              iconSize: 34,
             ),
           ],
         ),
@@ -280,20 +376,7 @@ class _RecordPageState extends State<RecordPage> {
                   ),
                   const SizedBox(height: 10),
                   if (!_showLeaderboard) ...[
-                    if (_selectedProfile != null) ...[
-                      _buildProfileAvatar(_selectedProfile!, size.height * .06),
-                      Padding(
-                        padding: EdgeInsets.only(top: size.height * .02),
-                        child: Text(
-                          _selectedProfile!.name.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ],
+                    if (_selectedProfile != null) _profileStatCard(size),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -342,25 +425,15 @@ class _RecordPageState extends State<RecordPage> {
               ),
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .06),
-                child: Image.asset(
-                  'assets/conveyor.png',
-                  fit: BoxFit.fitWidth,
-                  width: size.width,
-                ),
-              ),
+              bottom: size.height * .04,
+              left: 0,
+              right: 0,
+              child: ConveyorBelt(width: size.width, height: size.height * .07),
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .08, left: 15),
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Image.asset('assets/back.png'),
-                ),
-              ),
+              bottom: size.height * .05,
+              left: 20,
+              child: GameBackButton(onTap: () => Navigator.pop(context)),
             ),
           ],
         ),

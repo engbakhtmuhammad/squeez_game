@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 /// Reusable Custom Button Widget
 /// 
@@ -90,80 +91,75 @@ class _CustomButtonState extends State<CustomButton> {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = widget.enabled;
+    final base = enabled ? widget.backgroundColor : Colors.grey.shade600;
     return Opacity(
       opacity: widget.opacity,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTapDown: widget.enabled
-              ? (_) {
-                  setState(() {
-                    _isPressed = true;
-                  });
-                }
-              : null,
-          onTapUp: widget.enabled
-              ? (_) {
-                  setState(() {
-                    _isPressed = false;
-                  });
-                }
-              : null,
-          onTapCancel: widget.enabled
-              ? () {
-                  setState(() {
-                    _isPressed = false;
-                  });
-                }
-              : null,
-          onTap: widget.enabled ? widget.onPressed : null,
-          child: Container(
-            width: widget.width,
-            height: widget.height,
-            padding: widget.padding,
-            decoration: BoxDecoration(
-              color: _isPressed && widget.enabled
-                  ? widget.backgroundColor.withValues(alpha: 0.8)
-                  : widget.backgroundColor,
-              border: Border.all(
-                color: widget.borderColor,
-                width: widget.borderWidth,
+      child: AnimatedScale(
+        scale: _isPressed && enabled ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 90),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            onTapDown:
+                enabled ? (_) => setState(() => _isPressed = true) : null,
+            onTapUp: enabled ? (_) => setState(() => _isPressed = false) : null,
+            onTapCancel:
+                enabled ? () => setState(() => _isPressed = false) : null,
+            onTap: enabled ? widget.onPressed : null,
+            child: Container(
+              width: widget.width,
+              height: widget.height,
+              padding: widget.padding,
+              decoration: BoxDecoration(
+                gradient: AppGradients.button(base),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  width: widget.borderWidth,
+                ),
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                boxShadow: widget.elevation > 0 && enabled
+                    ? [
+                        BoxShadow(
+                          color: base.withValues(alpha: 0.45),
+                          blurRadius: widget.elevation * 2,
+                          offset: Offset(0, widget.elevation / 2),
+                        ),
+                        const BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ]
+                    : const [],
               ),
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              boxShadow: widget.elevation > 0
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: widget.elevation,
-                        offset: Offset(0, widget.elevation / 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (widget.iconData != null) ...[
+                    Icon(
+                      widget.iconData,
+                      color: widget.iconColor ?? widget.textColor,
+                      size: widget.iconSize,
+                    ),
+                    const SizedBox(width: 8.0),
+                  ],
+                  Flexible(
+                    child: Text(
+                      widget.text,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: enabled ? widget.textColor : Colors.white70,
+                        fontSize: widget.fontSize,
+                        fontWeight: widget.fontWeight,
+                        letterSpacing: 0.5,
                       ),
-                    ]
-                  : [],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (widget.iconData != null) ...[
-                  Icon(
-                    widget.iconData,
-                    color: widget.iconColor ?? widget.textColor,
-                    size: widget.iconSize,
-                  ),
-                  const SizedBox(width: 8.0),
-                ],
-                Flexible(
-                  child: Text(
-                    widget.text,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: widget.enabled ? widget.textColor : Colors.grey,
-                      fontSize: widget.fontSize,
-                      fontWeight: widget.fontWeight,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

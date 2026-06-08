@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:squeez_game/Components/app_widgets.dart';
 import 'package:squeez_game/Components/background.dart';
 import 'package:squeez_game/Components/custom_button.dart';
+import 'package:squeez_game/Components/game_graphics.dart';
 import 'package:squeez_game/Screens/Game/game.dart';
 import 'package:squeez_game/constants.dart';
 import 'package:squeez_game/data/game_data.dart';
 import 'package:squeez_game/models/daily_challenge.dart';
 import 'package:squeez_game/models/game_mode.dart';
 import 'package:squeez_game/models/profile.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 class DailyChallengePage extends StatefulWidget {
   const DailyChallengePage({super.key});
@@ -62,18 +65,14 @@ class _DailyChallengePageState extends State<DailyChallengePage> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(
-                    top: size.height * .15,
-                    bottom: size.height * .03,
+                    top: size.height * .13,
+                    bottom: size.height * .02,
                   ),
-                  child: Text(
-                    'DAILY CHALLENGE',
-                    style: GoogleFonts.fredoka(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontSize: 32,
-                    ),
-                  ),
+                  child: const SectionTitle('DAILY\nCHALLENGE', size: 34),
                 ),
+                const Icon(Icons.local_fire_department_rounded,
+                    color: AppColors.accent, size: 40),
+                const SizedBox(height: AppSpace.md),
                 if (_loading)
                   const CircularProgressIndicator(color: Colors.white)
                 else if (challenge == null || _profile == null)
@@ -156,25 +155,15 @@ class _DailyChallengePageState extends State<DailyChallengePage> {
               ],
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .06),
-                child: Image.asset(
-                  'assets/conveyor.png',
-                  fit: BoxFit.fitWidth,
-                  width: size.width,
-                ),
-              ),
+              bottom: size.height * .04,
+              left: 0,
+              right: 0,
+              child: ConveyorBelt(width: size.width, height: size.height * .07),
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .08, left: 15),
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Image.asset('assets/back.png'),
-                ),
-              ),
+              bottom: size.height * .05,
+              left: 20,
+              child: GameBackButton(onTap: () => Navigator.pop(context)),
             ),
           ],
         ),

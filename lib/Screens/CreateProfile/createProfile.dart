@@ -2,11 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:squeez_game/Components/app_widgets.dart';
 import 'package:squeez_game/Components/background.dart';
+import 'package:squeez_game/Components/game_graphics.dart';
 import 'package:squeez_game/Components/custom_button.dart';
-import 'package:squeez_game/constants.dart';
 import 'package:squeez_game/data/game_data.dart';
 import 'package:squeez_game/models/profile.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 class CreateProfile extends StatefulWidget {
   const CreateProfile({super.key});
@@ -27,8 +29,7 @@ class _CreateProfileState extends State<CreateProfile> {
     super.dispose();
   }
 
-  bool get _isProfileComplete =>
-      _nameController.text.trim().isNotEmpty;
+  bool get _isProfileComplete => _nameController.text.trim().isNotEmpty;
 
   Future<String?> _pickAndSave(ImageSource source, String prefix) async {
     final XFile? image = await _picker.pickImage(
@@ -47,44 +48,46 @@ class _CreateProfileState extends State<CreateProfile> {
 
   Future<void> _showPhotoOptions({required bool isReferee}) async {
     final prefix = isReferee ? 'referee' : 'profile';
+    void apply(String? path) {
+      if (path == null) return;
+      setState(() {
+        if (isReferee) {
+          _refereePhotoPath = path;
+        } else {
+          _photoPath = path;
+        }
+      });
+    }
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Padding(
+              padding: const EdgeInsets.all(AppSpace.md),
+              child: Text(
+                isReferee ? 'GAME OVER CAN' : 'YOUR CAN',
+                style: AppText.heading(18),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a Photo'),
+              leading: const Icon(Icons.camera_alt_rounded,
+                  color: AppColors.accent),
+              title: Text('Take a Photo', style: AppText.body(15)),
               onTap: () async {
                 Navigator.pop(ctx);
-                final path = await _pickAndSave(ImageSource.camera, prefix);
-                if (path != null) {
-                  setState(() {
-                    if (isReferee) {
-                      _refereePhotoPath = path;
-                    } else {
-                      _photoPath = path;
-                    }
-                  });
-                }
+                apply(await _pickAndSave(ImageSource.camera, prefix));
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from Gallery'),
+              leading: const Icon(Icons.photo_library_rounded,
+                  color: AppColors.primary),
+              title: Text('Choose from Gallery', style: AppText.body(15)),
               onTap: () async {
                 Navigator.pop(ctx);
-                final path = await _pickAndSave(ImageSource.gallery, prefix);
-                if (path != null) {
-                  setState(() {
-                    if (isReferee) {
-                      _refereePhotoPath = path;
-                    } else {
-                      _photoPath = path;
-                    }
-                  });
-                }
+                apply(await _pickAndSave(ImageSource.gallery, prefix));
               },
             ),
           ],
@@ -106,7 +109,6 @@ class _CreateProfileState extends State<CreateProfile> {
     await GameData.addProfile(profile);
     await GameData.setSelectedProfileId(profile.id);
 
-    // Customizer achievement: both icons set
     if (_photoPath != null && _refereePhotoPath != null) {
       await GameData.unlockAchievement('customizer');
     }
@@ -114,172 +116,191 @@ class _CreateProfileState extends State<CreateProfile> {
     if (mounted) Navigator.pop(context);
   }
 
-  Widget _iconPicker({
+  Widget _canPicker({
     required String label,
+    required String sublabel,
     required String? path,
-    required String placeholderAsset,
-    required IconData fallbackIcon,
     required bool isReferee,
-    required double size,
+    required Color color,
+    required double height,
   }) {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(bottom: size * .15),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 18,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _showPhotoOptions(isReferee: isReferee),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          children: [
+            Text(label, style: AppText.heading(15)),
+            const SizedBox(height: AppSpace.sm),
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                SodaCan(
+                  height: height,
+                  color: color,
+                  isReferee: isReferee,
+                  photoPath: path,
+                ),
+                Positioned(
+                  bottom: -4,
+                  right: height * 0.10,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isReferee ? AppColors.danger : AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black45, blurRadius: 6),
+                      ],
+                    ),
+                    child: Icon(
+                      path == null ? Icons.add_a_photo_rounded : Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: AppSpace.md),
+            Text(
+              sublabel,
+              textAlign: TextAlign.center,
+              style: AppText.body(11, color: AppColors.onSurfaceMuted),
+            ),
+          ],
         ),
-        GestureDetector(
-          onTap: () => _showPhotoOptions(isReferee: isReferee),
-          child: CircleAvatar(
-            radius: size,
-            backgroundColor: kBackgroundColor,
-            backgroundImage: path != null
-                ? FileImage(File(path))
-                : AssetImage(placeholderAsset) as ImageProvider,
-            child: path == null
-                ? Icon(fallbackIcon, color: Colors.white, size: 26)
-                : null,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final avatarRadius = size.height * .055;
+    final canHeight = size.height * .14;
     return Scaffold(
       body: Background(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  SizedBox(height: size.height * .08),
-                  Container(
-                    width: size.width * .85,
-                    padding: EdgeInsets.symmetric(
-                      vertical: size.height * .03,
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpace.lg,
+                  size.height * .05,
+                  AppSpace.lg,
+                  size.height * .18,
+                ),
+                child: Column(
+                  children: [
+                    const SectionTitle('CREATE\nPLAYER', size: 34),
+                    const SizedBox(height: AppSpace.xs),
+                    Text(
+                      'Customize your cans, then name your player',
+                      textAlign: TextAlign.center,
+                      style: AppText.body(13, color: AppColors.onSurfaceMuted),
                     ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: kBackgroundColor, width: 4),
-                      color: kPrimaryColor,
-                      borderRadius: BorderRadius.circular(20),
+                    const SizedBox(height: AppSpace.lg),
+                    GlassCard(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _canPicker(
+                            label: 'YOUR CAN',
+                            sublabel: 'Squeeze these\nto score',
+                            path: _photoPath,
+                            isReferee: false,
+                            color: AppColors.can1,
+                            height: canHeight,
+                          ),
+                          Container(
+                            width: 1,
+                            height: canHeight * 1.4,
+                            color: Colors.white.withValues(alpha: 0.12),
+                          ),
+                          _canPicker(
+                            label: 'GAME OVER',
+                            sublabel: 'Avoid these\nat all costs',
+                            path: _refereePhotoPath,
+                            isReferee: true,
+                            color: AppColors.danger,
+                            height: canHeight,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _iconPicker(
-                              label: 'YOUR CAN',
-                              path: _photoPath,
-                              placeholderAsset: 'assets/avatar.png',
-                              fallbackIcon: Icons.add,
-                              isReferee: false,
-                              size: avatarRadius,
-                            ),
-                            _iconPicker(
-                              label: 'GAME OVER',
-                              path: _refereePhotoPath,
-                              placeholderAsset: 'assets/avatar.png',
-                              fallbackIcon: Icons.sports,
-                              isReferee: true,
-                              size: avatarRadius,
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: size.height * .03,
-                            bottom: size.height * .02,
+                    const SizedBox(height: AppSpace.md),
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.badge_rounded,
+                                  color: AppColors.accent, size: 22),
+                              const SizedBox(width: AppSpace.sm),
+                              Text('PLAYER NAME', style: AppText.heading(15)),
+                            ],
                           ),
-                          child: const Text(
-                            'WRITE THE NAME',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          height: size.height * .07,
-                          width: size.width * .65,
-                          decoration: BoxDecoration(
-                            color: kBackgroundColor,
-                            border: Border.all(color: Colors.white, width: 3),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: TextField(
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          const SizedBox(height: AppSpace.sm),
+                          TextField(
                             controller: _nameController,
                             onChanged: (_) => setState(() {}),
-                            decoration: const InputDecoration(
-                              hintText: 'USER_1',
-                              hintStyle: TextStyle(color: Colors.white54),
-                              border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
+                            textAlign: TextAlign.center,
+                            style: AppText.heading(20),
+                            cursorColor: AppColors.accent,
+                            decoration: InputDecoration(
+                              hintText: 'Enter a name…',
+                              hintStyle: AppText.body(16,
+                                  color: AppColors.onSurfaceFaint),
+                              filled: true,
+                              fillColor: AppColors.stroke,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 16),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                borderSide: const BorderSide(
+                                    color: Colors.white24, width: 1.5),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                                borderSide: const BorderSide(
+                                    color: AppColors.accent, width: 2),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  CustomButton(
-                    text: 'FINISH',
-                    onPressed: _isProfileComplete ? _finishProfile : () {},
-                    backgroundColor: Color(0xFFC08552),
-                    textColor: Colors.white,
-                    borderColor: Colors.black,
-                    borderWidth: 2.0,
-                    enabled: _isProfileComplete,
-                    fontSize: 20,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 50.0,
-                      vertical: 12.0,
+                    const SizedBox(height: AppSpace.lg),
+                    CustomButton(
+                      text: 'START PLAYING',
+                      onPressed: _isProfileComplete ? _finishProfile : () {},
+                      backgroundColor: AppColors.success,
+                      enabled: _isProfileComplete,
+                      iconData: Icons.check_rounded,
+                      fontSize: 18,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40.0, vertical: 14.0),
                     ),
-                  ),
-                  SizedBox(height: size.height * .15),
-                ],
-              ),
-            ),
-            Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .06),
-                child: Image.asset(
-                  'assets/conveyor.png',
-                  fit: BoxFit.fitWidth,
-                  width: size.width,
+                  ],
                 ),
               ),
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .08, left: 15),
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Image.asset('assets/back.png'),
-                ),
-              ),
+              bottom: size.height * .04,
+              left: 0,
+              right: 0,
+              child: ConveyorBelt(width: size.width, height: size.height * .07),
+            ),
+            Positioned(
+              bottom: size.height * .05,
+              left: 20,
+              child: GameBackButton(onTap: () => Navigator.pop(context)),
             ),
           ],
         ),

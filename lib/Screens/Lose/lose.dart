@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:squeez_game/Components/app_widgets.dart';
 import 'package:squeez_game/Components/background.dart';
 import 'package:squeez_game/Components/custom_button.dart';
+import 'package:squeez_game/Components/game_graphics.dart';
 import 'package:squeez_game/Screens/Game/game.dart';
 import 'package:squeez_game/Screens/Menu/menu.dart';
 import 'package:squeez_game/constants.dart';
 import 'package:squeez_game/models/game_mode.dart';
 import 'package:squeez_game/models/profile.dart';
+import 'package:squeez_game/theme/app_theme.dart';
 
 class GameOverPage extends StatelessWidget {
   final int score;
@@ -54,39 +57,19 @@ class GameOverPage extends StatelessWidget {
                 children: [
                   Padding(
                     padding: EdgeInsets.only(
-                      top: size.height * .16,
-                      bottom: size.height * .02,
+                      top: size.height * .12,
+                      bottom: size.height * .015,
                     ),
-                    child: Text(
-                      timeUp ? "TIME'S UP" : 'GAME OVER',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 36,
-                      ),
+                    child: SodaCan(
+                      height: 80,
+                      color: AppColors.can1,
+                      isBroken: true,
                     ),
                   ),
+                  SectionTitle(timeUp ? "TIME'S UP" : 'GAME OVER', size: 34),
+                  SizedBox(height: size.height * .02),
                   // Score
-                  Container(
-                    width: size.width * .4,
-                    height: size.height * .1,
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        fit: BoxFit.fitWidth,
-                        image: AssetImage('assets/score.png'),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '  ${score.toString().padLeft(6, '0')}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ),
+                  ScorePanel(score: score, scale: 1.3),
                   Padding(
                     padding: EdgeInsets.only(top: size.height * .01),
                     child: Text(
@@ -221,15 +204,10 @@ class GameOverPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: size.height * .06),
-                child: Image.asset(
-                  'assets/conveyor.png',
-                  fit: BoxFit.fitWidth,
-                  width: size.width,
-                ),
-              ),
+              bottom: size.height * .04,
+              left: 0,
+              right: 0,
+              child: ConveyorBelt(width: size.width, height: size.height * .07),
             ),
           ],
         ),
