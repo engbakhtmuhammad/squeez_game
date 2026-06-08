@@ -19,12 +19,33 @@ class AudioService {
   int _sfxIndex = 0;
   bool _sfxReady = false;
 
+  /// Background music volume (0.0 - 1.0). Kept light so SFX stay audible.
+  static const double _bgmVolume = 0.40;
+
   /// Call once at app startup (await it before runApp).
   Future<void> init() async {
+    // Allow BGM and SFX to play in parallel. Without disabling audio focus,
+    // every sound effect grabs focus and pauses the background music.
+    await AudioPlayer.global.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: const {AVAudioSessionOptions.mixWithOthers},
+        ),
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          stayAwake: false,
+          contentType: AndroidContentType.music,
+          usageType: AndroidUsageType.media,
+          audioFocus: AndroidAudioFocus.none,
+        ),
+      ),
+    );
+
     if (!_bgmReady) {
       _bgmPlayer = AudioPlayer();
       await _bgmPlayer!.setReleaseMode(ReleaseMode.loop);
-      await _bgmPlayer!.setVolume(0.45);
+      await _bgmPlayer!.setVolume(_bgmVolume);
       _bgmReady = true;
     }
 
