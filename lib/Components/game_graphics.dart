@@ -12,6 +12,7 @@ class SodaCan extends StatelessWidget {
   final bool isReferee;
   final bool isBroken;
   final String? photoPath;
+  final IconData? labelIcon;
 
   const SodaCan({
     super.key,
@@ -20,6 +21,7 @@ class SodaCan extends StatelessWidget {
     this.isReferee = false,
     this.isBroken = false,
     this.photoPath,
+    this.labelIcon,
   });
 
   double get width => height * 0.6;
@@ -27,6 +29,7 @@ class SodaCan extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPhoto = photoPath != null && File(photoPath!).existsSync();
+    final iconColor = Color.lerp(color, Colors.black, 0.30)!;
     return SizedBox(
       width: width,
       height: height,
@@ -42,6 +45,11 @@ class SodaCan extends StatelessWidget {
               hidePlainLabel: hasPhoto,
             ),
           ),
+          if (labelIcon != null && !hasPhoto)
+            Transform.translate(
+              offset: Offset(0, height * 0.04),
+              child: Icon(labelIcon, size: width * 0.52, color: iconColor),
+            ),
           if (hasPhoto)
             Padding(
               padding: EdgeInsets.only(top: height * 0.04),
@@ -383,42 +391,6 @@ class _ConveyorPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ConveyorPainter old) => old.phase != phase;
-}
-
-/// A glowing power-up token.
-class PowerUpToken extends StatelessWidget {
-  final double size;
-  final Color color;
-  final String emoji;
-
-  const PowerUpToken({
-    super.key,
-    required this.size,
-    required this.color,
-    required this.emoji,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [Color.lerp(color, Colors.white, 0.3)!, color],
-        ),
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(color: color.withValues(alpha: 0.7), blurRadius: 14),
-        ],
-      ),
-      child: Center(
-        child: Text(emoji,
-            style: TextStyle(fontSize: size * 0.42, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
 }
 
 /// Random vibrant can colour helper.

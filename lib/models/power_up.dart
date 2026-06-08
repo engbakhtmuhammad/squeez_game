@@ -19,6 +19,17 @@ class PowerUpItem {
     }
   }
 
+  IconData get icon {
+    switch (type) {
+      case PowerUpType.slowMo:
+        return Icons.hourglass_bottom_rounded;
+      case PowerUpType.shield:
+        return Icons.shield_rounded;
+      case PowerUpType.doublePoints:
+        return Icons.looks_two_rounded;
+    }
+  }
+
   Color get color {
     switch (type) {
       case PowerUpType.slowMo:

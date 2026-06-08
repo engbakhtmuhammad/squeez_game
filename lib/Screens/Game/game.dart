@@ -605,14 +605,38 @@ class _GamePageState extends State<GamePage>
                 );
               }),
 
-              // Power-ups on conveyor
+              // Power-ups on conveyor (rendered as glowing cans)
               ..._powerUps.map((pu) => Positioned(
                     left: pu.xPos,
-                    bottom: size.height * .23,
-                    child: PowerUpToken(
-                      size: size.height * .08,
-                      color: pu.color,
-                      emoji: pu.emoji,
+                    bottom: size.height * .22,
+                    child: SizedBox(
+                      width: size.height * .12 * 0.6,
+                      height: size.height * .12,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Glow halo to mark it as a collectible power-up
+                          Container(
+                            width: size.height * .085,
+                            height: size.height * .085,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: pu.color.withValues(alpha: 0.75),
+                                  blurRadius: 18,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SodaCan(
+                            height: size.height * .12,
+                            color: pu.color,
+                            labelIcon: pu.icon,
+                          ),
+                        ],
+                      ),
                     ),
                   )),
 
